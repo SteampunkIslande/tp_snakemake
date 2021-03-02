@@ -1,0 +1,52 @@
+
+# Alignement Fastq > SAM 
+rule alignement:
+	input:
+		"{sample}.fastq"
+	output:
+		"{sample}.sam"
+	shell:
+		"bwa mem genom/ecoli.fa {input} > {output}"
+
+
+# Conversion SAM en BAM 
+rule sam2bam:
+	input:
+		"{sample}.sam"
+	output:
+		"{sample}.bam"
+	shell:
+		"samtools sort -O BAM {input} > {output}; samtools index {output}"
+
+# variant calling 
+rule variantCalling:
+	input:
+		"{sample}.bam"
+	output:
+		"{sample}.vcf"
+	shell:
+		"freebayes -f genom/ecoli.fa {input} > {output}"
+
+
+rule bgzip:
+	input:
+		"{sample}.vcf"
+	output:
+		"{sample}.vcf.gz",
+		"{sample}.vcf.gz.tbi"
+	shell:
+		"bgzip {input}; tabix {output[0]}"
+
+rule mergeAll : 
+	input:
+		"sample1.vcf.gz",
+		"sample2.vcf.gz",
+		"sample3.vcf.gz",
+		"sample4.vcf.gz",
+		"sample5.vcf.gz"
+		
+	output:
+		"allsample.vcf.gz"
+	shell:
+		"bcftools merge {input}|bgzip> {output}"
+
